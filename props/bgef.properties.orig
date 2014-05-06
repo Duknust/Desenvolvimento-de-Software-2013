@@ -1,0 +1,8 @@
+<<<<<<< mine
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+
+bgef.connectionbroker.impl=org.bgef.dao.db.SQLiteConnectionBroker
+bgef.connectionbroker.props=props/sqlite.properties=======
+bgef.conectionbroker.impl=org.bgef.dao.db.SQLiteConnectionBroker
+bgef.conectionbroker.props=sqlite.properties>>>>>>> theirs

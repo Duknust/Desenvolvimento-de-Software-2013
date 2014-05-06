@@ -1,0 +1,11 @@
+\.orig$ 
+\.orig\..*$ 
+\.chg\..*$ 
+\.rej$ 
+\.conflict\~$ 
+nbproject\/private\/.*$ 
+build\/.*$ 
+dist\/.*$ 
+syntax: glob
+src\org\bgef\imagens\ESTADIO_FULL.psd
+src\org\bgef\imagens\T1.psd

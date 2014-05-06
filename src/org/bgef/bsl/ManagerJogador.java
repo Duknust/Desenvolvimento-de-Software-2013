@@ -1,0 +1,170 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package org.bgef.bsl;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.bgef.bsl.domains.Equipa;
+import org.bgef.bsl.domains.Jogador;
+import org.bgef.bsl.exceptions.BslConnectionBrokerUnavailableException;
+import org.bgef.bsl.exceptions.BslInsertionFailedException;
+import org.bgef.bsl.exceptions.GenericBslException;
+import org.bgef.dao.EquipaDAO;
+import org.bgef.dao.JogadorDAO;
+import org.bgef.dao.db.ConnectionBrokerFactory;
+import org.bgef.dao.db.IConnectionBroker;
+import org.bgef.dao.exceptions.DatabaseConnectionDAOException;
+import org.bgef.dao.exceptions.GenericDAOException;
+import org.bgef.dao.exceptions.StatementExecuteDAOException;
+
+/**
+ *
+ * @author duarteduarte
+ */
+public class ManagerJogador extends GenericManager<Jogador> {
+
+    private IConnectionBroker cb = null;
+    private JogadorDAO jogadorDAO = null;
+    private Properties props = null;
+
+    public ManagerJogador(Properties props) throws BslConnectionBrokerUnavailableException {
+        try {
+            Properties connectionBrokerProperties = new Properties();
+            connectionBrokerProperties.load(new FileInputStream(props.getProperty("bgef.connectionbroker.props")));
+            this.cb = (props != null) ? ConnectionBrokerFactory.giveMeConnectionBrokerByName(props.getProperty("bgef.connectionbroker.impl"), connectionBrokerProperties) : ConnectionBrokerFactory.giveMeConnectionBrokerFromProperties();
+            jogadorDAO = new JogadorDAO(cb);
+        } catch (GenericDAOException ex) {
+            throw new BslConnectionBrokerUnavailableException("Unable to load a connection broker", ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ManagerArbitro.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    @Override
+    public boolean insereNovo(Jogador object) throws GenericBslException {
+        boolean result = false;
+        try {
+            if (valida(object)) {
+                result = this.jogadorDAO.insert(object);
+            }
+        } catch (GenericDAOException daoe) {
+            throw new BslInsertionFailedException("Failed insertion of Jogador", daoe);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean remove(Jogador object) throws GenericBslException {
+        boolean result = false;
+        try {
+            result = this.jogadorDAO.delete(object);
+        } catch (GenericDAOException daoe) {
+            throw new BslInsertionFailedException("Failed remove of Jogador", daoe);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean update(Jogador object) throws GenericBslException {
+        boolean result = false;
+        try {
+            if (valida(object)) {
+                result = this.jogadorDAO.update(object);
+            }
+        } catch (GenericDAOException daoe) {
+            throw new BslInsertionFailedException("Failed update of Jogador", daoe);
+        }
+
+        return result;
+    }
+
+    @Override
+    protected boolean valida(Jogador object) {
+        if (object.getNome().length() > 30) {
+            return false;
+        }
+        if (object.getDataNascimento().length() > 10) {
+            return false;
+        }
+        if (object.getSexo().length() > 10) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public List<Jogador> procuraPorCaracteristicas(Jogador object) {
+        List<Jogador> jogadores = new ArrayList<>();
+        this.jogadorDAO = new JogadorDAO(cb);
+        try {
+            jogadores = jogadorDAO.getByCriteria(object);
+        } catch (GenericDAOException ex) {
+            Logger.getLogger(ManagerJogador.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return jogadores;
+    }
+
+    @Override
+    public List<Jogador> getAll() {
+        List<Jogador> jogadores = null;
+        jogadorDAO = new JogadorDAO(cb);
+        try {
+            jogadores = jogadorDAO.getAll();
+        } catch (GenericDAOException ex) {
+            Logger.getLogger(ManagerJogador.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return jogadores;
+    }
+
+    public Equipa getEquipafromJogador(Jogador jogador) {
+        Equipa equipa = null;
+        try {
+            ManagerEquipa me;
+
+            me = new ManagerEquipa(this.props);
+
+            equipa = new Equipa();
+            equipa.setId(jogador.getIdEquipa());
+            if (jogador.getIdEquipa() >= 0) {
+                return me.procuraPorCaracteristicas(equipa).get(0);
+            } else {
+                return null;
+            }
+        } catch (BslConnectionBrokerUnavailableException ex) {
+            Logger.getLogger(ManagerJogador.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return equipa;
+    }
+
+    public void getEquipa(Jogador j) {
+
+        int idEq = j.getIdEquipa();
+        EquipaDAO eqd = new EquipaDAO(this.cb);
+        try {
+            j.setEquipa(eqd.getById(idEq));
+        } catch (DatabaseConnectionDAOException | StatementExecuteDAOException ex) {
+            Logger.getLogger(ManagerJogador.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }
+
+    @Override
+    public Jogador procuraPorId(int id) {
+        Jogador jogador = null;
+        try {
+            jogador = this.jogadorDAO.getById(id);
+        } catch (GenericDAOException daoe) {
+            new BslInsertionFailedException("Failed procura por Id of Jogador", daoe);
+        }
+        return jogador;
+    }
+}
